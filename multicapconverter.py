@@ -1,17 +1,4 @@
 # -*- coding: utf-8 -*-
-
-__author__ = "Abdelhafidh Belalia (s77rt)"
-__credits__ = ['Jens Steube <jens.steube@gmail.com>',
-               'Philipp "philsmd" Schmidt <philsmd@hashcat.net>',
-               'ZerBea (https://github.com/ZerBea)',
-               'RealEnder (https://github.com/RealEnder)',
-               'Carmix (https://github.com/gcarmix)']
-__license__ = "MIT"
-__maintainer__ = "Abdelhafidh Belalia (s77rt)"
-__email__ = "admin@abdelhafidh.com"
-__version__ = "1.2.0"
-__github__ = "https://github.com/s77rt/multicapconverter/"
-
 import re
 import sys
 from itertools import groupby
