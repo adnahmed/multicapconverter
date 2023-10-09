@@ -1926,4 +1926,4 @@ def main(args, cap_file, filesize):
 				("\n- Clear the filter (-f/--filter-by)" if args.filter_by != [None, None] else "")+ \
 				("\n- Use --ignore-ie to ignore ie (AKM Check) (Not Recommended)" if not args.ignore_ie else "")+ \
 				("\n- Use --ignore-ts to ignore timestamps check (Not Recommended)" if (not args.ignore_ts and LOGGER.warning.get('Zero value timestamps detected')) else "")+ \
-				("\n- Use --overwrite-essid to set a custom essid (useful for cloaked ESSID) (DANGEROUS)" if not args.overwrite_essid else "") \
+				("\n- Use --overwrite-essid to set a custom essid (useful for cloaked ESSID) (DANGEROUS)" if not args.overwrite_essid else ""))
