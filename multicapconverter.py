@@ -13,12 +13,13 @@ __email__ = "admin@abdelhafidh.com"
 __version__ = "1.2.0"
 __github__ = "https://github.com/s77rt/multicapconverter/"
 
-import sys
 import re
-from operator import itemgetter
+import sys
 from itertools import groupby
-from multiprocessing import Process, Manager
+from multiprocessing import Manager, Process
+from operator import itemgetter
 
+xprint = print
 ################################
 
 ### Endianness ###
@@ -821,12 +822,12 @@ def read_pcapng_file_header(pcapng):
 	for block in blocks:
 		if block['block_type'] == Section_Header_Block:
 			try:
-				interface = next(blocks)
+				_interface = next(blocks)
 			except:
 				break
 			pcapng_file_header = {}
 			pcapng_file_header['magic'] = block['block_body'][:4]
-			pcapng_file_header['linktype'] = interface['block_body'][0]
+			pcapng_file_header['linktype'] = _interface['block_body'][0]
 			if BIG_ENDIAN_HOST:
 				pcapng_file_header['magic'] = byte_swap_32(pcapng_file_header['magic'])
 				pcapng_file_header['linktype'] = byte_swap_32(pcapng_file_header['linktype'])
@@ -844,7 +845,7 @@ def read_pcapng_file_header(pcapng):
 				pcapng_file_header['section_options'].append(option)
 			if_tsresol = 6
 			pcapng_file_header['interface_options'] = []
-			for option in read_options(interface['block_body'][8:], bitness):
+			for option in read_options(_interface['block_body'][8:], bitness):
 				if option['code'] == if_tsresol_code:
 					if_tsresol = ord(option['value'][:option['length']])
 					## currently only supports if_tsresol = 6
@@ -1369,8 +1370,8 @@ def __xbuild__(Builder, DB, essid_list):
 	Builder.__build__(DB, essid_list)
 
 class Builder(object):
-	def __init__(self, export, export_unauthenticated=False, filters=None, group_by=None, do_not_clean=False, ignore_ie=False):
-		self.export = export
+	def __init__(self, _export, export_unauthenticated=False, filters=None, group_by=None, do_not_clean=False, ignore_ie=False):
+		self.export = _export
 		self.export_unauthenticated = export_unauthenticated
 		self.filters = filters
 		self.group_by = group_by
@@ -1926,4 +1927,3 @@ def main(args, cap_file, filesize):
 				("\n- Use --ignore-ie to ignore ie (AKM Check) (Not Recommended)" if not args.ignore_ie else "")+ \
 				("\n- Use --ignore-ts to ignore timestamps check (Not Recommended)" if (not args.ignore_ts and LOGGER.warning.get('Zero value timestamps detected')) else "")+ \
 				("\n- Use --overwrite-essid to set a custom essid (useful for cloaked ESSID) (DANGEROUS)" if not args.overwrite_essid else "") \
-			)
