@@ -13,14 +13,8 @@ __email__ = "admin@abdelhafidh.com"
 __version__ = "1.2.0"
 __github__ = "https://github.com/s77rt/multicapconverter/"
 
-import os
 import sys
-import argparse
-import errno
 import re
-import gzip
-import requests
-import time
 from operator import itemgetter
 from itertools import groupby
 from multiprocessing import Process, Manager
@@ -36,8 +30,6 @@ else:
 ###
 
 ### Constants ###
-OUI_DB_FILE = os.path.join(os.path.expanduser('~'), "oui.csv")
-OUI_DB_URL = "http://standards-oui.ieee.org/oui/oui.csv"
 
 HCCAPX_VERSION   =  4
 HCCAPX_SIGNATURE = 0x58504348 # HCPX
@@ -239,44 +231,6 @@ def xprint(text="", end='\n', flush=True):
 	print(text, end=end, flush=flush)
 ###
 
-### MAC VENDOR LOOKUP ###
-class MAC_VENDOR_LOOKUP(object):
-	def __init__(self, localFile, remoteFile):
-		self.localFile = localFile
-		self.remoteFile = remoteFile
-		self.data = {}
-		self.load_data()
-	def download_data(self):
-		if os.path.isfile(self.localFile):
-			os.remove(self.localFile)
-		xprint("[i] Downloading OUI Database...", end='\r', flush=True)
-		response = requests.get(self.remoteFile, stream=True)
-		filesize_total = int(response.headers.get('content-length', 1))
-		filesize_downloaded = 0
-		prev_time = time.time()
-		with open(self.localFile+'.tmp', "wb") as handle:
-			for data in response.iter_content():
-				filesize_downloaded += len(data)
-				if time.time() - prev_time > 1:
-					if filesize_total > 1:
-						xprint('[i] Downloading OUI Database...{:05.2f}%'.format((filesize_downloaded/filesize_total)*100), end='\r', flush=True)
-					prev_time = time.time()
-				handle.write(data)
-		os.rename(self.localFile+'.tmp', self.localFile)
-		xprint("[i] Downloading OUI Database.......OK", flush=True)
-	def load_data(self):
-		if not os.path.isfile(self.localFile):
-			return
-		with open(self.localFile, 'r') as localFile:
-			for line in localFile:
-				try:
-					vendor = re.search(r',([0-9A-F]{6}),(?:(?:"(.+?)",)|(.+?),)', line)
-					self.data[vendor.group(1)] = vendor.group(2) or vendor.group(3)
-				except:
-					pass
-	def lookup(self, mac):
-		return self.data.get(mac[:6].upper(), 'N/A')
-MAC_VENDOR = MAC_VENDOR_LOOKUP(OUI_DB_FILE, OUI_DB_URL)
 ##################
 
 ### Database-Like ###
@@ -818,16 +772,7 @@ def read_custom_block(custom_block, bitness):
 
 ######################### READ FILE #########################
 
-def get_filesize(file):
-	old_file_pos = file.tell()
-	file.seek(0, os.SEEK_END)
-	filesize = file.tell()
-	file.seek(old_file_pos, os.SEEK_SET)
-	return filesize
-
 def read_file(file):
-	if file.lower().endswith('.gz'):
-		return gzip.open(file, 'rb')
 	return open(file, 'rb')
 
 def read_pcap_file_header(pcap):
@@ -1466,12 +1411,9 @@ class Builder(object):
 			essidf = essid['essid'].decode(encoding='utf-8', errors='ignore').rstrip('\x00')
 			bssidf = ':'.join(bssid[i:i+2] for i in range(0,12,2))
 			if not QUIET:
-				xprint('\n|*| BSSID={} ESSID={} ({}){}'.format( \
+				xprint('\n|*| BSSID={} ESSID={} (Vendor MAC)'.format( \
 					bssidf, \
-					essidf, \
-					MAC_VENDOR.lookup(bssid), \
-					' [Skipped]' if (self.filters[0] == "essid" and self.filters[1] != essidf) or (self.filters[0] == "bssid" and self.filters[1] != bssid) else '' \
-				))
+					essidf))
 			### FILTER ###
 			if (self.filters[0] == "essid" and self.filters[1] != essidf) or (self.filters[0] == "bssid" and self.filters[1] != bssid):
 				continue
@@ -1777,7 +1719,7 @@ class Builder(object):
 				if not DB.essids.get(key):
 					bssid = bytes(key).hex()
 					bssidf = ':'.join(bssid[i:i+2] for i in range(0,12,2))
-					xprint('\n|*| BSSID={} ({}) (Undetected)'.format(bssidf, MAC_VENDOR.lookup(bssid)), end='')
+					xprint('\n|*| BSSID={} (Vendor MAC) (Undetected)'.format(bssidf), end='')
 					if (self.filters[0] == "essid") or (self.filters[0] == "bssid" and self.filters[1] != bssid):
 						xprint(' [Skipped]')
 						continue
@@ -1794,7 +1736,7 @@ class Builder(object):
 				if not DB.essids.get(key):
 					bssid = bytes(key).hex()
 					bssidf = ':'.join(bssid[i:i+2] for i in range(0,12,2))
-					xprint('\n|*| BSSID={} ({}) (Undetected)'.format(bssidf, MAC_VENDOR.lookup(bssid)), end='')
+					xprint('\n|*| BSSID={} (VENDOR_MAC) (Undetected)'.format(bssidf), end='')
 					if (self.filters[0] == "essid") or (self.filters[0] == "bssid" and self.filters[1] != bssid):
 						xprint(' [Skipped]')
 						continue
@@ -1814,14 +1756,14 @@ class Builder(object):
 
 ######################### MAIN #########################
 
-def main():
+def main(args, input, filesize):
 	global CUSTOM_ESSID
 	if args.overwrite_essid:
 		CUSTOM_ESSID = bytes(args.overwrite_essid, "utf-8")
-	if os.path.isfile(args.input):
-		cap_file = read_file(args.input)
+	if input:
+		cap_file = read_file(input)
 		if not QUIET:
-			STATUS.set_filesize(get_filesize(cap_file))
+			STATUS.set_filesize(filesize)
 		try:
 			if args.input.lower().endswith('.pcapng') or args.input.lower().endswith('.pcapng.gz'):
 				for pcapng_file_header, bitness, if_tsresol, pcapng in read_pcapng_file_header(cap_file):
@@ -1987,74 +1929,3 @@ def main():
 					("\n- Use --ignore-ts to ignore timestamps check (Not Recommended)" if (not args.ignore_ts and LOGGER.warning.get('Zero value timestamps detected')) else "")+ \
 					("\n- Use --overwrite-essid to set a custom essid (useful for cloaked ESSID) (DANGEROUS)" if not args.overwrite_essid else "") \
 				)
-			xprint()
-	else:
-		xprint(FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), args.input))
-		sys.exit(2)
-
-#########################
-#########################
-
-if __name__ == '__main__':
-	parser = argparse.ArgumentParser(description='Convert a cap/pcap/pcapng capture file to a hashcat hcwpax/hccapx/hccap/hcpmkid/hceapmd5/hceapleap file', add_help=False)
-
-	optionsGroup = parser.add_argument_group('options')
-	filterOptionsGroup = parser.add_argument_group('filter options')
-	advancedOptionsGroup = parser.add_argument_group('advanced options')
-	miscellaneousOptionsGroup = parser.add_argument_group('miscellaneous options')
-	infoGroup = parser.add_argument_group('info')
-
-	optionsGroup.add_argument("--input", "-i", metavar="capture.pcapng")
-	optionsGroup.add_argument("--export", "-x", choices=['hcwpax', 'hccapx', 'hccap', 'hcpmkid', 'hceapmd5', 'hceapleap'], default="hcwpax")
-	optionsGroup.add_argument("--output", "-o", metavar="capture.hcwpax")
-	filterOptionsGroup.add_argument("--all", "-a", help="export all handshakes even unauthenticated ones", action="store_true")
-	filterOptionsGroup.add_argument("--filter-by", "-f", nargs=2, metavar=('filter', 'value'), help="valid filters: bssid and essid", default=[None, None])
-	filterOptionsGroup.add_argument("--group-by", "-g", choices=['none', 'bssid', 'essid', 'handshake'], default='bssid')
-	advancedOptionsGroup.add_argument("--ignore-ie", help="ignore information element (AKM Check) (Not Recommended)", action="store_true")
-	advancedOptionsGroup.add_argument("--ignore-ts", help="ignore timestamps check (Not Recommended)", action="store_true")
-	advancedOptionsGroup.add_argument("--overwrite-essid", metavar="ESSID", help="overwrite ESSID tags (useful for cloaked ESSID) (DANGEROUS)")
-	miscellaneousOptionsGroup.add_argument("--wordlist", "-E", help="extract wordlist / AP-LESS possible passwords (autohex enabled on non ASCII characters)", metavar="wordlist.txt")
-	miscellaneousOptionsGroup.add_argument("--do-not-clean", help="do not clean output", action="store_true")
-	miscellaneousOptionsGroup.add_argument("--quiet", "-q", help="enable quiet mode (print only output files/data)", action="store_true")
-	miscellaneousOptionsGroup.add_argument("--update-oui", help="update OUI Database", action="store_true")
-	infoGroup.add_argument("--about", help="show program's about and exit", action="store_true")
-	infoGroup.add_argument("--version", "-v", action="version", version=__version__)
-	infoGroup.add_argument("--help", "-h", action="help", default=argparse.SUPPRESS, help="show this help message and exit")
-
-	args = parser.parse_args()
-
-	if args.about:
-		print("Author: {}".format(__author__))
-		print("Credits: {}".format(', '.join(__credits__)))
-		print("License: {}".format(__license__))
-		print("Maintainer: {}".format(__maintainer__))
-		print("Email: {}".format(__email__))
-		print("Version: {}".format(__version__))
-		print("GitHub: {}".format(__github__))
-		sys.exit(0)
-
-	if args.filter_by[0]:
-		if args.filter_by[0] not in ['bssid', 'essid']:
-			argparse.ArgumentParser.error(parser, 'argument --filter-by/-f: must be either bssid XX:XX:XX:XX:XX:XX or essid ESSID')
-		elif args.filter_by[0] == "bssid": 
-			args.filter_by[1] = get_valid_bssid(args.filter_by[1])
-			if not args.filter_by[1]:
-				argparse.ArgumentParser.error(parser, 'in argument --filter-by/-f: bssid is not valid')
-
-	if args.update_oui:
-		MAC_VENDOR.download_data()
-		MAC_VENDOR.load_data()
-
-	if not args.input:
-		if args.update_oui:
-			sys.exit(0)
-		parser.print_usage()
-		print("{}: error: the following arguments are required: --input/-i".format(sys.argv[0]))
-		sys.exit(3)
-
-	if args.quiet:
-		QUIET = True
-		def xprint(text="", end='\n', flush=True):
-			pass
-
-	main()
