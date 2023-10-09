@@ -177,7 +177,6 @@ class l_messages(dict):
 			self[key] += value
 class Logger(object):
 	def __init__(self):
-		super(Logger, self).__init__()
 		self.info = l_messages()
 		self.warning = l_messages()
 		self.error = l_messages()
@@ -243,7 +242,6 @@ def xprint(text="", end='\n', flush=True):
 ### MAC VENDOR LOOKUP ###
 class MAC_VENDOR_LOOKUP(object):
 	def __init__(self, localFile, remoteFile):
-		super(MAC_VENDOR_LOOKUP, self).__init__()
 		self.localFile = localFile
 		self.remoteFile = remoteFile
 		self.data = {}
@@ -386,7 +384,6 @@ class hceapleaps(dict):
 ## Database:
 class Database(object):
 	def __init__(self):
-		super(Database, self).__init__()
 		self.statistics = statistics()
 		self.passwords = passwords()
 		self.essids = essids()
@@ -578,7 +575,6 @@ DB = Database()
 ### STATUS ###
 class Status(object):
 	def __init__(self):
-		super(Status, self).__init__()
 		self.total_filesize = 0
 		self.current_filepos = 0
 		self.current_packet = 0
@@ -1423,7 +1419,6 @@ def __xbuild__(Builder, DB, essid_list):
 
 class Builder(object):
 	def __init__(self, export, export_unauthenticated=False, filters=None, group_by=None, do_not_clean=False, ignore_ie=False):
-		super(Builder, self).__init__()
 		self.export = export
 		self.export_unauthenticated = export_unauthenticated
 		self.filters = filters
