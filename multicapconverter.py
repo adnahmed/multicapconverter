@@ -336,6 +336,15 @@ class hceapleaps(dict):
 		if key not in self:
 			dict.__setitem__(self, key, value)
 ## Database:
+class Outputs(object):
+	def __init__(self):
+		self.wordlist_file = None 
+		self.hccap_file = None
+		self.hccapx_file = None
+		self.hcwpax_file = None
+		self.hcpmkid_file = None
+		self.hceapmd5_file = None
+		self.hceapleap_file  = None
 class Database(object):
 	def __init__(self):
 		self.statistics = statistics()
@@ -524,6 +533,7 @@ class Database(object):
 			'resp2': auth_resp2 \
 		})
 DB = Database()
+outputs = Outputs()
 ###
 
 ### STATUS ###
@@ -771,10 +781,6 @@ def read_custom_block(custom_block, bitness):
 ###
 
 ######################### READ FILE #########################
-
-def read_file(file):
-	return open(file, 'rb')
-
 def read_pcap_file_header(pcap):
 	try:
 		pcap_header = pcap.read(SIZE_OF_pcap_file_header_t)
@@ -1756,176 +1762,168 @@ class Builder(object):
 
 ######################### MAIN #########################
 
-def main(args, input, filesize):
+def main(args, cap_file, filesize):
 	global CUSTOM_ESSID
 	if args.overwrite_essid:
 		CUSTOM_ESSID = bytes(args.overwrite_essid, "utf-8")
-	if input:
-		cap_file = read_file(input)
-		if not QUIET:
-			STATUS.set_filesize(filesize)
-		try:
-			if args.input.lower().endswith('.pcapng') or args.input.lower().endswith('.pcapng.gz'):
-				for pcapng_file_header, bitness, if_tsresol, pcapng in read_pcapng_file_header(cap_file):
-					read_pcapng_packets(cap_file, pcapng, pcapng_file_header, bitness, if_tsresol, args.ignore_ts)
-			elif args.input.lower().endswith('.cap') or args.input.lower().endswith('.cap.gz') or args.input.lower().endswith('.pcap') or args.input.lower().endswith('.pcap.gz'):
-				pcap_file_header, bitness = read_pcap_file_header(cap_file)
-				read_pcap_packets(cap_file, pcap_file_header, bitness, args.ignore_ts)
-			else:
-				raise ValueError("Unsupported capture file")
-		except ValueError as error:
-			xprint(str(error))
-			xprint("This may be due to using the wrong file extension (.pcap instead of .pcapng or vice versa)")
-			sys.exit(1)
+	if not QUIET:
+		STATUS.set_filesize(filesize)
+	try:
+		if args.input.lower().endswith('.pcapng') or args.input.lower().endswith('.pcapng.gz'):
+			for pcapng_file_header, bitness, if_tsresol, pcapng in read_pcapng_file_header(cap_file):
+				read_pcapng_packets(cap_file, pcapng, pcapng_file_header, bitness, if_tsresol, args.ignore_ts)
+		elif args.input.lower().endswith('.cap') or args.input.lower().endswith('.cap.gz') or args.input.lower().endswith('.pcap') or args.input.lower().endswith('.pcap.gz'):
+			pcap_file_header, bitness = read_pcap_file_header(cap_file)
+			read_pcap_packets(cap_file, pcap_file_header, bitness, args.ignore_ts)
 		else:
-			cap_file.close()
-			if not QUIET:
-				xprint(' '*77, end='\r')
-				if len(DB.essids) == 0 and len(DB.excpkts) == 0 and len(DB.eapmd5s) == 0 and len(DB.eapleaps) == 0:
-					xprint("[!] No Networks found\n")
-					sys.exit(0)
+			raise ValueError("Unsupported capture file")
+	except ValueError as error:
+		xprint(str(error))
+		xprint("This may be due to using the wrong file extension (.pcap instead of .pcapng or vice versa)")
+		sys.exit(1)
+	else:
+		cap_file.close()
+		if not QUIET:
+			xprint(' '*77, end='\r')
+			if len(DB.essids) == 0 and len(DB.excpkts) == 0 and len(DB.eapmd5s) == 0 and len(DB.eapleaps) == 0:
+				xprint("[!] No Networks found\n")
+				sys.exit(0)
 
-				xprint("[i] Networks detected: {}".format(len(DB.essids)))
+			xprint("[i] Networks detected: {}".format(len(DB.essids)))
 
-				for message, count in LOGGER.info.items():
-					xprint('[i] {}: {}'.format(message, count))
-				for message, count in LOGGER.warning.items():
-					xprint('[!] {}: {}'.format(message, count))
-				for message, count in LOGGER.error.items():
-					xprint('[!] {}: {}'.format(message, count))
-				for message, count in LOGGER.critical.items():
-					xprint('[!] {}: {}'.format(message, count))
-				for message, count in LOGGER.debug.items():
-					xprint('[@] {}: {}'.format(message, count))
+			for message, count in LOGGER.info.items():
+				xprint('[i] {}: {}'.format(message, count))
+			for message, count in LOGGER.warning.items():
+				xprint('[!] {}: {}'.format(message, count))
+			for message, count in LOGGER.error.items():
+				xprint('[!] {}: {}'.format(message, count))
+			for message, count in LOGGER.critical.items():
+				xprint('[!] {}: {}'.format(message, count))
+			for message, count in LOGGER.debug.items():
+				xprint('[@] {}: {}'.format(message, count))
 
-			Builder(export=args.export, export_unauthenticated=args.all, filters=args.filter_by, group_by=args.group_by, do_not_clean=args.do_not_clean, ignore_ie=args.ignore_ie).build()
+		Builder(export=args.export, export_unauthenticated=args.all, filters=args.filter_by, group_by=args.group_by, do_not_clean=args.do_not_clean, ignore_ie=args.ignore_ie).build()
 
-			if args.wordlist and len(DB.passwords):
-				xprint("\nMiscellaneous:")
-				# AP-LESS possible passwords
-				DB.passwords = list(set(DB.passwords)) # Remove duplicates
-				wordlist_file = open(args.wordlist, 'w')
-				wordlist_file.write('\n'.join(DB.passwords)+'\n')
-				wordlist_file.close()
-				xprint("Extracted {} AP-LESS possible passwords to {}\n".format(len(DB.passwords), args.wordlist), end='')
-			if args.export == "hccap" and len(DB.hccaps):
-				written = 0
-				xprint("\nOutput hccap files:")
-				for hccap in DB.hccaps:
-					if args.output:
-						hccap_filename = (re.sub('\\.hccap(x?)$', '', args.output, flags=re.IGNORECASE)) + get_valid_filename("{}.hccap".format("_"+str(hccap['key']) if hccap['key'] != "none" else ''))
+		if args.wordlist and len(DB.passwords):
+			xprint("\nMiscellaneous:")
+			# AP-LESS possible passwords
+			DB.passwords = list(set(DB.passwords)) # Remove duplicates
+			outputs.wordlist_file = '\n'.join(DB.passwords)+'\n'
+			xprint("Extracted {} AP-LESS possible passwords to {}\n".format(len(DB.passwords), args.wordlist), end='')
+		if args.export == "hccap" and len(DB.hccaps):
+			written = 0
+			xprint("\nOutput hccap files:")
+			for hccap in DB.hccaps:
+				if args.output:
+					hccap_filename = (re.sub('\\.hccap(x?)$', '', args.output, flags=re.IGNORECASE)) + get_valid_filename("{}.hccap".format("_"+str(hccap['key']) if hccap['key'] != "none" else ''))
+				else:
+					if hccap['key'] == "none":
+						hccap_filename = re.sub('\\.(p?)cap((ng)?)((\\.gz)?)$', '', args.input, flags=re.IGNORECASE) + ".hccap"
 					else:
-						if hccap['key'] == "none":
-							hccap_filename = re.sub('\\.(p?)cap((ng)?)((\\.gz)?)$', '', args.input, flags=re.IGNORECASE) + ".hccap"
-						else:
-							hccap_filename = get_valid_filename("{}.hccap".format(str(hccap['key'])))
-					print(hccap_filename)
-					hccap_file = open(hccap_filename, 'wb')
-					hccap_file.write(b''.join(hccap['raw_data']))
-					hccap_file.close()
-					written += len(hccap['raw_data'])
-				if written:
-					xprint("\nWritten {} WPA Handshakes to {} files".format(written, len(DB.hccaps)), end='')
-			elif args.export == "hccapx" and len(DB.hccapxs):
-				written = 0
-				xprint("\nOutput hccapx files:")
-				for hccapx in DB.hccapxs:
-					if args.output:
-						hccapx_filename = (re.sub('\\.hccap(x?)$', '', args.output, flags=re.IGNORECASE)) + get_valid_filename("{}.hccapx".format("_"+str(hccapx['key']) if hccapx['key'] != "none" else ''))
+						hccap_filename = get_valid_filename("{}.hccap".format(str(hccap['key'])))
+				print(hccap_filename)
+				outputs.hccap_file = bytes().join(hccap['raw_data'])
+				written += len(hccap['raw_data'])
+			if written:
+				xprint("\nWritten {} WPA Handshakes to {} files".format(written, len(DB.hccaps)), end='')
+		elif args.export == "hccapx" and len(DB.hccapxs):
+			written = 0
+			xprint("\nOutput hccapx files:")
+			for hccapx in DB.hccapxs:
+				if args.output:
+					hccapx_filename = (re.sub('\\.hccap(x?)$', '', args.output, flags=re.IGNORECASE)) + get_valid_filename("{}.hccapx".format("_"+str(hccapx['key']) if hccapx['key'] != "none" else ''))
+				else:
+					if hccapx['key'] == "none":
+						hccapx_filename = re.sub('\\.(p?)cap((ng)?)((\\.gz)?)$', '', args.input, flags=re.IGNORECASE) + ".hccapx"
 					else:
-						if hccapx['key'] == "none":
-							hccapx_filename = re.sub('\\.(p?)cap((ng)?)((\\.gz)?)$', '', args.input, flags=re.IGNORECASE) + ".hccapx"
-						else:
-							hccapx_filename = get_valid_filename("{}.hccapx".format(str(hccapx['key'])))
-					print(hccapx_filename)
-					hccapx_file = open(hccapx_filename, 'wb')
-					hccapx_file.write(b''.join(hccapx['raw_data']))
-					hccapx_file.close()
-					written += len(hccapx['raw_data'])
+						hccapx_filename = get_valid_filename("{}.hccapx".format(str(hccapx['key'])))
+				print(hccapx_filename)
+				outputs.hccapx_file = bytes().join(hccapx['raw_data'])
+				written += len(hccapx['raw_data'])
+			if written:
+				xprint("\nWritten {} WPA Handshakes to {} files".format(written, len(DB.hccapxs)), end='')
+		elif args.export == "hcwpax" and len(DB.hcwpaxs):
+			if args.output:
+				written = 0
+				xprint("\nOutput hcwpax files:")
+				hcwpax_filename = args.output
+				print(hcwpax_filename)
+				hcwpax_file = ''
+				for hcwpax in DB.hcwpaxs.values():
+					hcwpax_line = '*'.join(hcwpax.values())
+					hcwpax_file += hcwpax_line+"\n"
+					written += 1
+				outputs.hcwpax_file = hcwpax_file
 				if written:
-					xprint("\nWritten {} WPA Handshakes to {} files".format(written, len(DB.hccapxs)), end='')
-			elif args.export == "hcwpax" and len(DB.hcwpaxs):
-				if args.output:
-					written = 0
-					xprint("\nOutput hcwpax files:")
-					hcwpax_filename = args.output
-					print(hcwpax_filename)
-					hcwpax_file = open(args.output, 'w')
-					for hcwpax in DB.hcwpaxs.values():
-						hcwpax_line = '*'.join(hcwpax.values())
-						hcwpax_file.write(hcwpax_line+"\n")
-						written += 1
-					hcwpax_file.close()
-					if written:
-						xprint("\nWritten {} WPA Handshakes to 1 files".format(written), end='')
-				else:
-					xprint("\nhcWPAx:")
-					for hcwpax in DB.hcwpaxs.values():
-						hcwpax_line = '*'.join(hcwpax.values())
-						print(hcwpax_line)
-			elif args.export == "hcpmkid" and len(DB.hcpmkids):
-				if args.output:
-					written = 0
-					xprint("\nOutput hcpmkid files:")
-					hcpmkid_filename = args.output
-					print(hcpmkid_filename)
-					hcpmkid_file = open(args.output, 'w')
-					for hcpmkid in DB.hcpmkids.values():
-						hcpmkid_line = ':'.join(hcpmkid.values())
-						hcpmkid_file.write(hcpmkid_line+"\n")
-						written += 1
-					hcpmkid_file.close()
-					if written:
-						xprint("\nWritten {} WPA Handshakes to 1 files".format(written), end='')
-				else:
-					xprint("\nhcPMKID:")
-					for hcpmkid in DB.hcpmkids.values():
-						hcpmkid_line = ':'.join(hcpmkid.values())
-						print(hcpmkid_line)
-			elif args.export == "hceapmd5" and len(DB.hceapmd5s):
-				if args.output:
-					written = 0
-					xprint("\nOutput hceapmd5 files:")
-					hceapmd5_filename = args.output
-					print(hceapmd5_filename)
-					hceapmd5_file = open(args.output, 'w')
-					for hceapmd5 in DB.hceapmd5s.values():
-						hceapmd5_line = ':'.join(hceapmd5.values())
-						hceapmd5_file.write(hceapmd5_line+"\n")
-						written += 1
-					hceapmd5_file.close()
-					if written:
-						xprint("\nWritten {} EAP-MD5 Authentications to 1 files".format(written), end='')
-				else:
-					xprint("\nhcEAP-MD5:")
-					for hceapmd5 in DB.hceapmd5s.values():
-						hceapmd5_line = ':'.join(hceapmd5.values())
-						print(hceapmd5_line)
-			elif args.export == "hceapleap" and len(DB.hceapleaps):
-				if args.output:
-					written = 0
-					xprint("\nOutput hceapleap files:")
-					hceapleap_filename = args.output
-					print(hceapleap_filename)
-					hceapleap_file = open(args.output, 'w')
-					for hceapleap in DB.hceapleaps.values():
-						hceapleap_line = ':'.join(hceapleap.values())
-						hceapleap_file.write(hceapleap_line+"\n")
-						written += 1
-					hceapleap_file.close()
-					if written:
-						xprint("\nWritten {} EAP-LEAP Authentications to 1 files".format(written), end='')
-				else:
-					xprint("\nhcEAP-LEAP:")
-					for hceapleap in DB.hceapleaps.values():
-						hceapleap_line = ':'.join(hceapleap.values())
-						print(hceapleap_line)
-			elif not QUIET:
-				xprint("\nNothing exported. You may want to: "+ \
-					("\n- Try a different export format (-x/--export)")+ \
-					("\n- Use -a/--all to export unauthenticated handshakes" if not args.all else "")+ \
-					("\n- Clear the filter (-f/--filter-by)" if args.filter_by != [None, None] else "")+ \
-					("\n- Use --ignore-ie to ignore ie (AKM Check) (Not Recommended)" if not args.ignore_ie else "")+ \
-					("\n- Use --ignore-ts to ignore timestamps check (Not Recommended)" if (not args.ignore_ts and LOGGER.warning.get('Zero value timestamps detected')) else "")+ \
-					("\n- Use --overwrite-essid to set a custom essid (useful for cloaked ESSID) (DANGEROUS)" if not args.overwrite_essid else "") \
-				)
+					xprint("\nWritten {} WPA Handshakes to 1 files".format(written), end='')
+			else:
+				xprint("\nhcWPAx:")
+				for hcwpax in DB.hcwpaxs.values():
+					hcwpax_line = '*'.join(hcwpax.values())
+					print(hcwpax_line)
+		elif args.export == "hcpmkid" and len(DB.hcpmkids):
+			if args.output:
+				written = 0
+				xprint("\nOutput hcpmkid files:")
+				hcpmkid_filename = args.output
+				print(hcpmkid_filename)
+				hcpmkid_file = ''
+				for hcpmkid in DB.hcpmkids.values():
+					hcpmkid_line = ':'.join(hcpmkid.values())
+					hcpmkid_file += hcpmkid_line+"\n"
+					written += 1
+				outputs.hcpmkid_file = hcpmkid_file 
+				if written:
+					xprint("\nWritten {} WPA Handshakes to 1 files".format(written), end='')
+			else:
+				xprint("\nhcPMKID:")
+				for hcpmkid in DB.hcpmkids.values():
+					hcpmkid_line = ':'.join(hcpmkid.values())
+					print(hcpmkid_line)
+		elif args.export == "hceapmd5" and len(DB.hceapmd5s):
+			if args.output:
+				written = 0
+				xprint("\nOutput hceapmd5 files:")
+				hceapmd5_filename = args.output
+				print(hceapmd5_filename)
+				hceapmd5_file = ''
+				for hceapmd5 in DB.hceapmd5s.values():
+					hceapmd5_line = ':'.join(hceapmd5.values())
+					hceapmd5_file += hceapmd5_line+"\n"
+					written += 1
+				outputs.hceapmd5_file = hceapmd5_file 
+				if written:
+					xprint("\nWritten {} EAP-MD5 Authentications to 1 files".format(written), end='')
+			else:
+				xprint("\nhcEAP-MD5:")
+				for hceapmd5 in DB.hceapmd5s.values():
+					hceapmd5_line = ':'.join(hceapmd5.values())
+					print(hceapmd5_line)
+		elif args.export == "hceapleap" and len(DB.hceapleaps):
+			if args.output:
+				written = 0
+				xprint("\nOutput hceapleap files:")
+				hceapleap_filename = args.output
+				print(hceapleap_filename)
+				hceapleap_file = ''
+				for hceapleap in DB.hceapleaps.values():
+					hceapleap_line = ':'.join(hceapleap.values())
+					hceapleap_file += hceapleap_line+"\n"
+					written += 1
+				outputs.hceapleap_file = hceapleap_file
+				if written:
+					xprint("\nWritten {} EAP-LEAP Authentications to 1 files".format(written), end='')
+			else:
+				xprint("\nhcEAP-LEAP:")
+				for hceapleap in DB.hceapleaps.values():
+					hceapleap_line = ':'.join(hceapleap.values())
+					print(hceapleap_line)
+		elif not QUIET:
+			xprint("\nNothing exported. You may want to: "+ \
+				("\n- Try a different export format (-x/--export)")+ \
+				("\n- Use -a/--all to export unauthenticated handshakes" if not args.all else "")+ \
+				("\n- Clear the filter (-f/--filter-by)" if args.filter_by != [None, None] else "")+ \
+				("\n- Use --ignore-ie to ignore ie (AKM Check) (Not Recommended)" if not args.ignore_ie else "")+ \
+				("\n- Use --ignore-ts to ignore timestamps check (Not Recommended)" if (not args.ignore_ts and LOGGER.warning.get('Zero value timestamps detected')) else "")+ \
+				("\n- Use --overwrite-essid to set a custom essid (useful for cloaked ESSID) (DANGEROUS)" if not args.overwrite_essid else "") \
+			)
