@@ -1,3 +1,23 @@
+def b2a_hex(s):
+    result = []
+    for char in s:
+        c = (ord(char) >> 4) & 0xf
+        if c > 9:
+            c = c + ord('a') - 10
+        else:
+            c = c + ord('0')
+        result.append(chr(c))
+        c = ord(char) & 0xf
+        if c > 9:
+            c = c + ord('a') - 10
+        else:
+            c = c + ord('0')
+        result.append(chr(c))
+    return ''.join(result)
+
+hexlify = b2a_hex
+
+
 table_hex = [
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
