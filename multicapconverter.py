@@ -5,6 +5,8 @@ from itertools import groupby
 from multiprocessing import Manager, Process
 from operator import itemgetter
 
+from lib import fromhex, hex
+
 xprint = print
 ################################
 
@@ -353,7 +355,7 @@ class Database(object):
 	def password_add(self, password):
 		for char in password:
 			if char < 0x20 or char > 0x7e:
-				self.passwords.append("$HEX[{}]".format(password.hex()))
+				self.passwords.append("$HEX[{}]".format(hex(password)))
 				return
 		self.passwords.append(password.decode('ascii'))
 	def essid_add(self, bssid, essid, essid_len, essid_source):
@@ -404,7 +406,7 @@ class Database(object):
 		}]}})
 	def eapmd5_add(self, auth_id, mac_ap, mac_sta, auth_hash, auth_salt):
 		key = mac_ap
-		subkey = hash(auth_id+bytes(mac_ap+mac_sta).hex())
+		subkey = hash(auth_id+hex(bytes(mac_ap+mac_sta)))
 		self.eapmd5s.__setitem__(key, {subkey: {
 			'id': auth_id,
 			'mac_ap': mac_ap,
@@ -414,7 +416,7 @@ class Database(object):
 		}})
 	def eapleap_add(self, auth_id, mac_ap, mac_sta, auth_resp1, auth_resp2, auth_name):
 		key = mac_ap
-		subkey = hash(auth_id+bytes(mac_ap+mac_sta).hex())
+		subkey = hash(auth_id+hex(bytes(mac_ap+mac_sta)))
 		self.eapleaps.__setitem__(key, {subkey: {
 			'id': auth_id,
 			'mac_ap': mac_ap,
@@ -462,7 +464,7 @@ class Database(object):
 				'pmkid_or_mic': pmkid_or_mic, \
 				'mac_ap': mac_ap, \
 				'mac_sta': mac_sta, \
-				'essid': bytes(essid).hex(), \
+				'essid': hex(bytes(essid)), \
 				'anonce': '', \
 				'eapol': '', \
 				'message_pair': '' \
@@ -472,12 +474,12 @@ class Database(object):
 			self.hcwpaxs.__setitem__(key, { \
 				'signature': signature, \
 				'type': ftype, \
-				'pmkid_or_mic': bytes(pmkid_or_mic).hex(), \
-				'mac_ap': bytes(mac_ap).hex(), \
-				'mac_sta': bytes(mac_sta).hex(), \
-				'essid': bytes(essid).hex(), \
-				'anonce': bytes(anonce).hex(), \
-				'eapol': bytes(eapol).hex(), \
+				'pmkid_or_mic': hex(bytes(pmkid_or_mic)), \
+				'mac_ap': hex(bytes(mac_ap)), \
+				'mac_sta': hex(bytes(mac_sta)), \
+				'essid': hex(bytes(essid)), \
+				'anonce': hex(bytes(anonce)), \
+				'eapol': hex(bytes(eapol)), \
 				'message_pair': '{:02x}'.format(message_pair) \
 			})
 	def hcpmkid_add(self, pmkid, mac_ap, mac_sta, essid):
@@ -486,13 +488,13 @@ class Database(object):
 			'pmkid': pmkid, \
 			'mac_ap': mac_ap, \
 			'mac_sta': mac_sta, \
-			'essid': bytes(essid).hex() \
+			'essid': hex(bytes(essid)) \
 		})
 	def pmkid_add(self, mac_ap, mac_sta, pmkid, akm):
 		key = hash(mac_ap+mac_sta)
 		self.pmkids.__setitem__(key, {
-			'mac_ap': bytes(mac_ap).hex(),
-			'mac_sta': bytes(mac_sta).hex(),
+			'mac_ap': hex(bytes(mac_ap)),
+			'mac_sta': hex(bytes(mac_sta)),
 			'pmkid': pmkid,
 			'akm': akm
 		})
@@ -582,7 +584,7 @@ def get_pmkid_from_packet(packet, source):
 					tag_data = packet[pos+2:pos+2+tag_len]
 					if tag_id == 221:
 						if tag_data[0:3] == SUITE_OUI:
-							pmkid = tag_data[4:].hex()
+							pmkid = hex(tag_data[4:])
 							if pmkid != '0'*32:
 								yield pmkid, akm
 					pos = pos+2+tag_len
@@ -640,7 +642,7 @@ def get_pmkid_from_packet(packet, source):
 					pos = pos+4
 					for i in range(0, pmkid_count):
 						pos += (16*i)+16
-						pmkid = tag_data[pos-16:pos].hex()
+						pmkid = hex(tag_data[pos-16:pos])
 						if pmkid != '0'*32:
 							yield pmkid, akm[3]
 				except:
@@ -1037,16 +1039,16 @@ def process_packet(packet, header):
 							DB.pmkid_add(mac_ap=ieee80211_hdr_3addr['addr1'], mac_sta=ieee80211_hdr_3addr['addr2'], pmkid=pmkid, akm=akm)
 			elif auth_head_type == AUTH_EAP:
 				if packet[auth_offset+4] in [1, 2]:
-					auth_id = packet[auth_offset+5:auth_offset+5+1].hex()
+					auth_id = hex(packet[auth_offset+5:auth_offset+5+1])
 					auth_type = packet[auth_offset+8]
 					if auth_type == AUTH_EAP_MD5:
 						if packet[auth_offset+4] == 1: # Request
 							auth_hash = ''
-							auth_salt = packet[auth_offset+10:auth_offset+10+packet[auth_offset+9]].hex()
+							auth_salt = hex(packet[auth_offset+10:auth_offset+10+packet[auth_offset+9]])
 							mac_ap = ieee80211_hdr_3addr['addr3']
 							mac_sta = ieee80211_hdr_3addr['addr1'] if ieee80211_hdr_3addr['addr3'] != ieee80211_hdr_3addr['addr1'] else ieee80211_hdr_3addr['addr2']
 						else: # Response
-							auth_hash = packet[auth_offset+10:auth_offset+10+packet[auth_offset+9]].hex()
+							auth_hash = hex(packet[auth_offset+10:auth_offset+10+packet[auth_offset+9]])
 							auth_salt = ''
 							mac_ap = ieee80211_hdr_3addr['addr3']
 							mac_sta = ieee80211_hdr_3addr['addr1'] if ieee80211_hdr_3addr['addr3'] != ieee80211_hdr_3addr['addr1'] else ieee80211_hdr_3addr['addr2']
@@ -1054,12 +1056,12 @@ def process_packet(packet, header):
 					elif auth_type == AUTH_EAP_LEAP:
 						if packet[auth_offset+4] == 1: # Request
 							auth_resp1 = ''
-							auth_resp2 = packet[auth_offset+12:auth_offset+12+packet[auth_offset+11]].hex()
+							auth_resp2 = hex(packet[auth_offset+12:auth_offset+12+packet[auth_offset+11]])
 							auth_name = packet[auth_offset+12+packet[auth_offset+11]:].decode(encoding='utf-8', errors='ignore').rstrip('\x00')
 							mac_ap = ieee80211_hdr_3addr['addr3']
 							mac_sta = ieee80211_hdr_3addr['addr1'] if ieee80211_hdr_3addr['addr3'] != ieee80211_hdr_3addr['addr1'] else ieee80211_hdr_3addr['addr2']
 						else: # Response
-							auth_resp1 = packet[auth_offset+12:auth_offset+12+packet[auth_offset+11]].hex()
+							auth_resp1 = hex(packet[auth_offset+12:auth_offset+12+packet[auth_offset+11]])
 							auth_resp2 = ''
 							auth_name = packet[auth_offset+12+packet[auth_offset+11]:].decode(encoding='utf-8', errors='ignore').rstrip('\x00')
 							mac_ap = ieee80211_hdr_3addr['addr3']
@@ -1400,7 +1402,7 @@ class Builder(object):
 	# The work (building)
 	def __build__(self, DB, essid_list):
 		for essid in essid_list.values():
-			bssid = bytes(essid['bssid']).hex()
+			bssid = hex(bytes(essid['bssid']))
 			essidf = essid['essid'].decode(encoding='utf-8', errors='ignore').rstrip('\x00')
 			bssidf = ':'.join(bssid[i:i+2] for i in range(0,12,2))
 			if not QUIET:
@@ -1532,7 +1534,7 @@ class Builder(object):
 										elif excpkt_sta['nonce'][28] != excpkt_sta_k['nonce'][28]:
 											message_pair |= MESSAGE_PAIR_BE
 								################
-								mac_sta = bytes(excpkt_sta['mac_sta']).hex()
+								mac_sta = hex(bytes(excpkt_sta['mac_sta']))
 								if skip == 0:
 									if auth == 1:
 										if not QUIET:
@@ -1651,7 +1653,7 @@ class Builder(object):
 					for eapmd5s_AP_STA_ in eapmd5s_AP_.values():
 						if not QUIET:
 							xprint('| > STA={}, ID={}'.format( \
-								':'.join(bytes(eapmd5s_AP_STA_['mac_sta']).hex()[i:i+2] for i in range(0,12,2)), \
+								':'.join(hex(bytes(eapmd5s_AP_STA_['mac_sta']))[i:i+2] for i in range(0,12,2)), \
 								eapmd5s_AP_STA_['id'] \
 							))
 						self.DB_hceapmd5_add(auth_id=eapmd5s_AP_STA_['id'], auth_hash=eapmd5s_AP_STA_['hash'], auth_salt=eapmd5s_AP_STA_['salt'])
@@ -1663,7 +1665,7 @@ class Builder(object):
 					for eapleaps_AP_STA_ in eapleaps_AP_.values():
 						if not QUIET:
 							xprint('| > STA={}, ID={}, NAME={}'.format( \
-								':'.join(bytes(eapleaps_AP_STA_['mac_sta']).hex()[i:i+2] for i in range(0,12,2)), \
+								':'.join(hex(bytes(eapleaps_AP_STA_['mac_sta']))[i:i+2] for i in range(0,12,2)), \
 								eapleaps_AP_STA_['id'], \
 								eapleaps_AP_STA_['name'] \
 							))
@@ -1710,7 +1712,7 @@ class Builder(object):
 			## In case we have EAP-MD5 but no essid has been detected
 			for key, value in DB.eapmd5s.items():
 				if not DB.essids.get(key):
-					bssid = bytes(key).hex()
+					bssid = hex(bytes(key))
 					bssidf = ':'.join(bssid[i:i+2] for i in range(0,12,2))
 					xprint('\n|*| BSSID={} (Vendor MAC) (Undetected)'.format(bssidf), end='')
 					if (self.filters[0] == "essid") or (self.filters[0] == "bssid" and self.filters[1] != bssid):
@@ -1719,7 +1721,7 @@ class Builder(object):
 					xprint()
 					for v in value.values():
 						xprint('| > STA={}, ID={}'.format( \
-							':'.join(bytes(v['mac_sta']).hex()[i:i+2] for i in range(0,12,2)), \
+							':'.join(hex(bytes(v['mac_sta']))[i:i+2] for i in range(0,12,2)), \
 							v['id'] \
 						))
 						DB.hceapmd5_add(auth_id=v['id'], auth_hash=v['hash'], auth_salt=v['salt'])
@@ -1727,7 +1729,7 @@ class Builder(object):
 			## In case we have EAP-LEAP but no essid has been detected
 			for key, value in DB.eapleaps.items():
 				if not DB.essids.get(key):
-					bssid = bytes(key).hex()
+					bssid = hex(bytes(key))
 					bssidf = ':'.join(bssid[i:i+2] for i in range(0,12,2))
 					xprint('\n|*| BSSID={} (VENDOR_MAC) (Undetected)'.format(bssidf), end='')
 					if (self.filters[0] == "essid") or (self.filters[0] == "bssid" and self.filters[1] != bssid):
@@ -1736,7 +1738,7 @@ class Builder(object):
 					xprint()
 					for v in value.values():
 						xprint('| > STA={}, ID={}, NAME={}'.format( \
-							':'.join(bytes(v['mac_sta']).hex()[i:i+2] for i in range(0,12,2)), \
+							':'.join(hex(bytes(v['mac_sta']))[i:i+2] for i in range(0,12,2)), \
 							v['id'], \
 							v['name'] \
 						))
