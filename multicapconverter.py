@@ -2,7 +2,7 @@
 import re
 import sys
 from itertools import groupby
-from multiprocessing import Manager, Process
+from multiprocessing import Process
 from operator import itemgetter
 
 from lib import fromhex, hex
@@ -1365,17 +1365,15 @@ class Builder(object):
 		self.group_by = group_by
 		self.do_not_clean = do_not_clean
 		self.ignore_ie = ignore_ie
-		# Workers Manager
-		manager = Manager()
-		# Lists were we store requested DB operations from our workers
-		self.DB_hcwpaxs_add_list = manager.list()
-		self.DB_hccap_add_list = manager.list()
-		self.DB_hccap_groupby_list = manager.list()
-		self.DB_hccapx_add_list = manager.list()
-		self.DB_hccapx_groupby_list = manager.list()
-		self.DB_hcpmkid_add_list = manager.list()
-		self.DB_hceapmd5_add_list = manager.list()
-		self.DB_hceapleap_add_list = manager.list()
+		# Lists were we store requested DB operations 
+		self.DB_hcwpaxs_add_list = []
+		self.DB_hccap_add_list = []
+		self.DB_hccap_groupby_list = []
+		self.DB_hccapx_add_list = []
+		self.DB_hccapx_groupby_list = []
+		self.DB_hcpmkid_add_list = []
+		self.DB_hceapmd5_add_list = []
+		self.DB_hceapleap_add_list = []
 
 	# Helper functions to store each DB req to the right list
 	def DB_hcwpaxs_add(self, **kwords):
