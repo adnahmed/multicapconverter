@@ -1,3 +1,10 @@
+"""Return the hexadecimal representation of the binary data. 
+Every byte of data is converted into the corresponding 2-digit hex representation. 
+The resulting string is therefore twice as long as the length of data."""
+"Example:"
+"> hexlify('ad')"
+'6164'
+
 def b2a_hex(s):
     result = []
     for char in s:
@@ -29,10 +36,15 @@ table_hex = [
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1
 ]
 
+"""Return the hexadecimal representation of the binary data.
+Every byte of data is converted into the corresponding 2-digit hex representation.
+The resulting string is therefore twice as long as the length of data."""
+"Example:"
+"> unhexlify('6164')"
+'ad'
 
 def a2b_hex(t):
     result = []
-
     def pairs_gen(s):
         while s:
             try:
@@ -42,11 +54,10 @@ def a2b_hex(t):
                     raise TypeError('Odd-length string')
                 return
             s = s[2:]
-
     for a, b in pairs_gen(t):
         if a < 0 or b < 0:
             raise TypeError('Non-hexadecimal digit found')
         result.append(chr((a << 4) + b))
-    return bytes(''.join(result))
+    return bytes(''.join(result), encoding='utf-8')
     
 unhexlify = a2b_hex
