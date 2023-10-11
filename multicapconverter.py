@@ -83,7 +83,7 @@ AUTH_EAP_LEAP = 17
 BROADCAST_MAC = (255, 255, 255, 255, 255, 255)
 MAX_ESSID_LEN =  32
 EAPOL_TTL = 1
-ZERO = b'\x00'
+ZERO = fromhex('00')
 
 WPA_KEY_INFO_TYPE_MASK = 7
 WPA_KEY_INFO_INSTALL = 64
@@ -124,7 +124,7 @@ HCXDUMPTOOL_MAGIC_NUMBER = bytes([0x2a, 0xce, 0x46, 0xa1, 0x79, 0xa0, 0x72, 0x33
 HCXDUMPTOOL_OPTIONCODE_RC			= 0xf29c
 HCXDUMPTOOL_OPTIONCODE_ANONCE		= 0xf29d
 
-SUITE_OUI = b'\x00\x0f\xac'
+SUITE_OUI = fromhex('000fac')
 AK_PSK = 2
 AK_PSKSHA256 = 6
 AK_SAFE = -1
@@ -555,10 +555,10 @@ def get_essid_from_tag(packet, header, length_skip):
 				if len(CUSTOM_ESSID) > 0:
 					essid['essid'] = CUSTOM_ESSID
 					essid['essid_len'] = len(essid['essid'])
-					essid['essid'] += b'\x00'*(MAX_ESSID_LEN - len(essid['essid']))
+					essid['essid'] += fromhex('00')*(MAX_ESSID_LEN - len(essid['essid']))
 				else:
 					essid['essid'] = beacon[cur:cur+taglen]
-					essid['essid'] += b'\x00'*(MAX_ESSID_LEN - len(essid['essid']))
+					essid['essid'] += fromhex('00')*(MAX_ESSID_LEN - len(essid['essid']))
 					essid['essid_len'] = taglen	
 				return 0, essid
 		cur += taglen
@@ -675,7 +675,7 @@ def handle_auth(auth_packet, auth_packet_copy, auth_packet_t_size, keymic_size, 
 			excpkt_num = EXC_PKT_NUM_2
 	excpkt = {}
 	excpkt['nonce'] = auth_packet['wpa_key_nonce']
-	excpkt['nonce'] += b'\x00'*(32 - len(excpkt['nonce']))
+	excpkt['nonce'] += fromhex('00')*(32 - len(excpkt['nonce']))
 	excpkt['replay_counter'] = ap_replay_counter
 	excpkt['excpkt_num'] = excpkt_num
 	excpkt['eapol_len'] = auth_packet_t_size + ap_wpa_key_data_length
@@ -684,9 +684,9 @@ def handle_auth(auth_packet, auth_packet_copy, auth_packet_t_size, keymic_size, 
 	if (auth_packet_t_size + ap_wpa_key_data_length) > SIZE_OF_EAPOL:
 		return -1, None
 	excpkt['eapol'] = auth_packet_copy
-	excpkt['eapol'] += b'\x00'*(auth_packet_t_size - len(excpkt['eapol']))
+	excpkt['eapol'] += fromhex('00') *(auth_packet_t_size - len(excpkt['eapol']))
 	excpkt['eapol'] += rest_packet[:ap_wpa_key_data_length]
-	excpkt['eapol'] += b'\x00'*(SIZE_OF_EAPOL - len(excpkt['eapol']))
+	excpkt['eapol'] += fromhex('00') *(SIZE_OF_EAPOL - len(excpkt['eapol']))
 	excpkt['keymic'] = auth_packet['wpa_key_mic']
 	excpkt['keyver'] = ap_key_information & WPA_KEY_INFO_TYPE_MASK
 	if (excpkt_num == EXC_PKT_NUM_3) or (excpkt_num == EXC_PKT_NUM_4):
@@ -1601,7 +1601,7 @@ class Builder(object):
 								elif self.export == "hccap":
 									if len(hccapx_to_pack['keymic']) != 16:
 										continue
-									hccap_essid = (hccapx_to_pack['essid']+b'\x00\x00\x00\x00')
+									hccap_essid = (hccapx_to_pack['essid']+fromhex('00000000'))
 									hccap = (
 										hccap_essid+ \
 										bytes(hccapx_to_pack['mac_ap'])+ \
