@@ -61,3 +61,24 @@ def a2b_hex(t):
     return bytes(''.join(result), encoding='utf-8')
     
 unhexlify = a2b_hex
+
+"fromhex($type, string, /)\n"
+"Create a bytes object from a string of hexadecimal numbers.\n"
+"Spaces between two numbers are accepted.\n"
+"Example: bytes.fromhex(\'B9 01EF\') -> b\'\\\\xb9\\\\x01\\\\xef\'."
+
+def fromhex(_hex): 
+    if len(_hex) == 0:
+        raise ValueError('Error: Empty Hex value.')
+    _hex = _hex.replace(' ', '')
+    if len(_hex) % 2 != 0 :
+        raise ValueError('Error: Hex value has odd length.')
+    _bytes = []
+    i = 0
+    while i < len(_hex):
+        v = _hex[i] + _hex[i + 1]
+        _bytes.append(int(v, 16))
+        i += 2
+    return bytes(_bytes)
+
+
