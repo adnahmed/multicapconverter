@@ -5,6 +5,7 @@ from itertools import groupby
 from multiprocessing import Process
 from operator import itemgetter
 
+from Dict import Dict
 from lib import fromhex, hex
 
 xprint = print
@@ -146,14 +147,14 @@ CUSTOM_ESSID = b''
 ###
 
 ### LOGGER ###
-class l_messages(dict):
+class l_messages(Dict):
 	def log(self, key, value=1):
 		"""
 		key => message
 		value => counter of message
 		"""
 		if key not in self:
-			dict.__setitem__(self, key, value)
+			Dict.__setitem__(self, key, value)
 		else:
 			self[key] += value
 class Logger(object):
@@ -224,7 +225,7 @@ def xprint(text="", end='\n', flush=True):
 
 ### Database-Like ###
 ## Tables:
-class statistics(dict):
+class statistics(Dict):
 	"""
 	Convention:
 	statistics[bssid][X] = Number of frames type X in bssid
@@ -235,25 +236,22 @@ class statistics(dict):
 	"""
 	def __setitem__(self, key, value):
 		if key not in self:
-			dict.__setitem__(self, key, {value: 1})
+			Dict.__setitem__(self, key, {value: 1})
 		else:
 			if value not in self[key]:
 				self[key].__setitem__(value, 1)
 			else:
 				self[key][value] += 1
-class passwords(list):
-	def __init__(self):
-		list.__init__(self)
-class essids(dict):
+class essids(Dict):
 	def __setitem__(self, key, value):
 		if key not in self:
-			dict.__setitem__(self, key, value)
+			Dict.__setitem__(self, key, value)
 		elif value['essid_source'] > self[key]['essid_source']:
 			self[key]['essid_source'] = value['essid_source']
-class excpkts(dict):
+class excpkts(Dict):
 	def __setitem__(self, key, value):
 		if key not in self:
-			dict.__setitem__(self, key, value)
+			Dict.__setitem__(self, key, value)
 		else:
 			subkey = list(value.keys())[0]
 			if subkey not in self[key]:
@@ -264,10 +262,10 @@ class excpkts(dict):
 					self[key][subkey].__setitem__(subsubkey, list(list(value.values())[0].values())[0])
 				else:
 					self[key][subkey][subsubkey].append(list(list(value.values())[0].values())[0][0])
-class eapmd5s(dict):
+class eapmd5s(Dict):
 	def __setitem__(self, key, value):
 		if key not in self:
-			dict.__setitem__(self, key, value)
+			Dict.__setitem__(self, key, value)
 		else:
 			subkey = list(value.keys())[0]
 			if subkey not in self[key]:
@@ -277,10 +275,10 @@ class eapmd5s(dict):
 					self[key][subkey]['hash'] = list(value.values())[0]['hash']
 				if not self[key][subkey]['salt'] and list(value.values())[0]['salt']:
 					self[key][subkey]['salt'] = list(value.values())[0]['salt']
-class eapleaps(dict):
+class eapleaps(Dict):
 	def __setitem__(self, key, value):
 		if key not in self:
-			dict.__setitem__(self, key, value)
+			Dict.__setitem__(self, key, value)
 		else:
 			subkey = list(value.keys())[0]
 			if subkey not in self[key]:
@@ -290,40 +288,34 @@ class eapleaps(dict):
 					self[key][subkey]['resp1'] = list(value.values())[0]['resp1']
 				if not self[key][subkey]['resp2'] and list(value.values())[0]['resp2']:
 					self[key][subkey]['resp2'] = list(value.values())[0]['resp2']
-class hccaps(list):
-	def __init__(self):
-		list.__init__(self)
-class hccapxs(list):
-	def __init__(self):
-		list.__init__(self)
-class hcwpaxs(dict):
+class hcwpaxs(Dict):
 	def __setitem__(self, key, value):
 		if key not in self:
-			dict.__setitem__(self, key, value)
-class hcpmkids(dict):
+			Dict.__setitem__(self, key, value)
+class hcpmkids(Dict):
 	def __setitem__(self, key, value):
 		if key not in self:
-			dict.__setitem__(self, key, value)
-class pmkids(dict):
+			Dict.__setitem__(self, key, value)
+class pmkids(Dict):
 	def __setitem__(self, key, value):
 		if key not in self:
-			dict.__setitem__(self, key, value)
+			Dict.__setitem__(self, key, value)
 		else:
 			self[key]['pmkid'] = value['pmkid']
-class pcapng_info(dict):
+class pcapng_info(Dict):
 	def __setitem__(self, key, value):
 		if key not in self:
-			dict.__setitem__(self, key, [value])
+			Dict.__setitem__(self, key, [value])
 		else:
 			self[key].append(value)
-class hceapmd5s(dict):
+class hceapmd5s(Dict):
 	def __setitem__(self, key, value):
 		if key not in self:
-			dict.__setitem__(self, key, value)
-class hceapleaps(dict):
+			Dict.__setitem__(self, key, value)
+class hceapleaps(Dict):
 	def __setitem__(self, key, value):
 		if key not in self:
-			dict.__setitem__(self, key, value)
+			Dict.__setitem__(self, key, value)
 ## Database:
 class Outputs(object):
 	def __init__(self):
@@ -337,13 +329,13 @@ class Outputs(object):
 class Database(object):
 	def __init__(self):
 		self.statistics = statistics()
-		self.passwords = passwords()
+		self.passwords = []
 		self.essids = essids()
 		self.excpkts = excpkts()
 		self.eapmd5s = eapmd5s()
 		self.eapleaps = eapleaps()
-		self.hccaps = hccaps()
-		self.hccapxs = hccapxs()
+		self.hccaps = []
+		self.hccapxs = []
 		self.hcwpaxs = hcwpaxs()
 		self.hcpmkids = hcpmkids()
 		self.pmkids = pmkids()
