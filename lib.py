@@ -82,3 +82,16 @@ def fromhex(_hex):
     return bytes(_bytes)
 
 
+"Example:\n"
+">>> value = b\'\\xb9\\x01\\xef\'\n"
+">>> value.hex()\n"
+"\'b901ef\'\n"
+">>> value.hex(\':\')\n"
+"\'b9:01:ef\'\n"
+">>> value.hex(\':\', 2)\n"
+"\'b9:01ef\'\n"
+">>> value.hex(\':\', -2)\n"
+"\'b901:ef\'"
+
+def hex(bytes):
+	return ''.join('{:02x}'.format(a) for a in [b for b in bytes])
