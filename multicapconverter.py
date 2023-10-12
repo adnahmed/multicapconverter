@@ -1759,14 +1759,12 @@ def main(args, cap_file, filesize):
 	except ValueError as error:
 		xprint(str(error))
 		xprint("This may be due to using the wrong file extension (.pcap instead of .pcapng or vice versa)")
-		sys.exit(1)
 	else:
 		cap_file.close()
 		if not QUIET:
 			xprint(' '*77, end='\r')
 			if len(DB.essids) == 0 and len(DB.excpkts) == 0 and len(DB.eapmd5s) == 0 and len(DB.eapleaps) == 0:
 				xprint("[!] No Networks found\n")
-				sys.exit(0)
 
 			xprint("[i] Networks detected: {}".format(len(DB.essids)))
 
