@@ -827,7 +827,7 @@ def read_pcapng_file_header(pcapng):
 			pcapng_file_header['interface_options'] = []
 			for option in read_options(_interface['block_body'][8:], bitness):
 				if option['code'] == if_tsresol_code:
-					if_tsresol = ord(option['value'][:option['length']])
+					if_tsresol = option['value'][:option['length']][0]
 					## currently only supports if_tsresol = 6
 					if if_tsresol != 6:
 						LOGGER.log('Unsupported if_tsresol', WARNING)
