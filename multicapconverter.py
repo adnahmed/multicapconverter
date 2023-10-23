@@ -119,8 +119,8 @@ Custom_Option_Codes = [2988, 2989, 19372, 19373]
 if_tsresol_code = 9
 opt_endofopt = 0
 
-HCXDUMPTOOL_PEN = bytes([0x2a, 0xce, 0x46, 0xa1])
-HCXDUMPTOOL_MAGIC_NUMBER = bytes([0x2a, 0xce, 0x46, 0xa1, 0x79, 0xa0, 0x72, 0x33, 0x83, 0x37, 0x27, 0xab, 0x59, 0x33, 0xb3, 0x62, 0x45, 0x37, 0x11, 0x47, 0xa7, 0xcf, 0x32, 0x7f, 0x8d, 0x69, 0x80, 0xc0, 0x89, 0x5e, 0x5e, 0x98])
+HCXDUMPTOOL_PEN = [0x2a, 0xce, 0x46, 0xa1]
+HCXDUMPTOOL_MAGIC_NUMBER = [0x2a, 0xce, 0x46, 0xa1, 0x79, 0xa0, 0x72, 0x33, 0x83, 0x37, 0x27, 0xab, 0x59, 0x33, 0xb3, 0x62, 0x45, 0x37, 0x11, 0x47, 0xa7, 0xcf, 0x32, 0x7f, 0x8d, 0x69, 0x80, 0xc0, 0x89, 0x5e, 0x5e, 0x98]
 HCXDUMPTOOL_OPTIONCODE_RC			= 0xf29c
 HCXDUMPTOOL_OPTIONCODE_ANONCE		= 0xf29d
 
@@ -409,7 +409,7 @@ class Database(object):
 		}]}})
 	def eapmd5_add(self, auth_id, mac_ap, mac_sta, auth_hash, auth_salt):
 		key = mac_ap
-		subkey = hash(auth_id+hex(bytes(mac_ap+mac_sta)))
+		subkey = hash(auth_id+hex(mac_ap+mac_sta))
 		self.eapmd5s.__setitem__(key, {subkey: {
 			'id': auth_id,
 			'mac_ap': mac_ap,
@@ -419,7 +419,7 @@ class Database(object):
 		}})
 	def eapleap_add(self, auth_id, mac_ap, mac_sta, auth_resp1, auth_resp2, auth_name):
 		key = mac_ap
-		subkey = hash(auth_id+hex(bytes(mac_ap+mac_sta)))
+		subkey = hash(auth_id+hex(mac_ap+mac_sta))
 		self.eapleaps.__setitem__(key, {subkey: {
 			'id': auth_id,
 			'mac_ap': mac_ap,
@@ -467,7 +467,7 @@ class Database(object):
 				'pmkid_or_mic': pmkid_or_mic, \
 				'mac_ap': mac_ap, \
 				'mac_sta': mac_sta, \
-				'essid': hex(bytes(essid)), \
+				'essid': hex(essid), \
 				'anonce': '', \
 				'eapol': '', \
 				'message_pair': '' \
@@ -477,12 +477,12 @@ class Database(object):
 			self.hcwpaxs.__setitem__(key, { \
 				'signature': signature, \
 				'type': ftype, \
-				'pmkid_or_mic': hex(bytes(pmkid_or_mic)), \
-				'mac_ap': hex(bytes(mac_ap)), \
-				'mac_sta': hex(bytes(mac_sta)), \
-				'essid': hex(bytes(essid)), \
-				'anonce': hex(bytes(anonce)), \
-				'eapol': hex(bytes(eapol)), \
+				'pmkid_or_mic': hex(pmkid_or_mic), \
+				'mac_ap': hex(mac_ap), \
+				'mac_sta': hex(mac_sta), \
+				'essid': hex(essid), \
+				'anonce': hex(anonce), \
+				'eapol': hex(eapol), \
 				'message_pair': '{:02x}'.format(message_pair) \
 			})
 	def hcpmkid_add(self, pmkid, mac_ap, mac_sta, essid):
@@ -491,13 +491,13 @@ class Database(object):
 			'pmkid': pmkid, \
 			'mac_ap': mac_ap, \
 			'mac_sta': mac_sta, \
-			'essid': hex(bytes(essid)) \
+			'essid': hex(essid) \
 		})
 	def pmkid_add(self, mac_ap, mac_sta, pmkid, akm):
 		key = hash(mac_ap+mac_sta)
 		self.pmkids.__setitem__(key, {
-			'mac_ap': hex(bytes(mac_ap)),
-			'mac_sta': hex(bytes(mac_sta)),
+			'mac_ap': hex(mac_ap),
+			'mac_sta': hex(mac_sta),
 			'pmkid': pmkid,
 			'akm': akm
 		})
@@ -748,7 +748,7 @@ def read_options(options_block, bitness):
 						yield custom_option
 			options_block = options_block[4+option_length:]
 		else:
-			option['value'] = bytes(option['value'])
+			option['value'] = option['value']
 			options_block = options_block[4+option_length:]
 			yield option
 
@@ -996,7 +996,7 @@ def process_packet(packet, header):
 						'wpa_key_mic': packet[auth_offset+81:auth_offset+97], \
 						'wpa_key_data_length': GetUint16(packet[auth_offset+97:auth_offset+99]) \
 					}
-					auth_packet_copy = bytes((*packet[auth_offset:auth_offset+81], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, *packet[auth_offset+97:auth_offset+99]))
+					auth_packet_copy = (*packet[auth_offset:auth_offset+81], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, *packet[auth_offset+97:auth_offset+99])
 				elif keymic_size == 24:
 					auth_packet = {
 						#'version': packet[auth_offset], \
@@ -1013,7 +1013,7 @@ def process_packet(packet, header):
 						'wpa_key_mic': packet[auth_offset+81:auth_offset+105], \
 						'wpa_key_data_length': GetUint16(packet[auth_offset+105:auth_offset+107]) \
 					}
-					auth_packet_copy = bytes((*packet[auth_offset:auth_offset+81], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, *packet[auth_offset+105:auth_offset+107]))
+					auth_packet_copy = (*packet[auth_offset:auth_offset+81], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, *packet[auth_offset+105:auth_offset+107])
 				else:
 					return
 				if BIG_ENDIAN_HOST:
@@ -1257,7 +1257,7 @@ def read_pcapng_packets(cap_file, pcapng, pcapng_file_header, bitness, if_tsreso
 			header_count += 1
 			try:
 				packet_error = None
-				packet = bytes(header_block['block_body'][20:20+header['caplen']])
+				packet = header_block['block_body'][20:20+header['caplen']]
 				if pcapng_file_header['linktype'] == DLT_IEEE802_11_PRISM:
 					if header['caplen'] < SIZE_OF_prism_header_t:
 						packet_error = 'Could not read prism header'
@@ -1403,7 +1403,7 @@ class Builder(object):
 	# The work (building)
 	def __build__(self, DB, essid_list):
 		for essid in essid_list.values():
-			bssid = hex(bytes(essid['bssid']))
+			bssid = hex(essid['bssid'])
 			essidf = essid['essid'].decode(encoding='utf-8', errors='ignore').rstrip('\x00')
 			bssidf = ':'.join(bssid[i:i+2] for i in range(0,12,2))
 			if not QUIET:
@@ -1512,7 +1512,7 @@ class Builder(object):
 													if excpkt_ap['replay_counter'] == info['value']:
 														check_1 = True
 												elif info['code'] == HCXDUMPTOOL_OPTIONCODE_ANONCE:
-													if bytes(excpkt_ap['nonce']) == info['value']:
+													if excpkt_ap['nonce'] == info['value']:
 														check_2 = True
 											if check_1 and check_2:
 												ap_less = 1
@@ -1535,7 +1535,7 @@ class Builder(object):
 										elif excpkt_sta['nonce'][28] != excpkt_sta_k['nonce'][28]:
 											message_pair |= MESSAGE_PAIR_BE
 								################
-								mac_sta = hex(bytes(excpkt_sta['mac_sta']))
+								mac_sta = hex(excpkt_sta['mac_sta'])
 								if skip == 0:
 									if auth == 1:
 										if not QUIET:
@@ -1594,18 +1594,18 @@ class Builder(object):
 									if len(hccapx_to_pack['keymic']) != 16:
 										continue
 									hccapx = (
-										bytes(PutUint32(hccapx_to_pack['signature']))+ \
-										bytes(PutUint32(hccapx_to_pack['version']))+ \
-										bytes([hccapx_to_pack['message_pair']])+ \
-										bytes([hccapx_to_pack['essid_len']])+ \
+										PutUint32(hccapx_to_pack['signature'])+ \
+										PutUint32(hccapx_to_pack['version'])+ \
+										[hccapx_to_pack['message_pair']]+ \
+										[hccapx_to_pack['essid_len']]+ \
 										hccapx_to_pack['essid']+ \
-										bytes([hccapx_to_pack['keyver']])+ \
+										[hccapx_to_pack['keyver']]+ \
 										hccapx_to_pack['keymic']+ \
-										bytes(hccapx_to_pack['mac_ap'])+ \
+										hccapx_to_pack['mac_ap']+ \
 										hccapx_to_pack['nonce_ap']+ \
-										bytes(hccapx_to_pack['mac_sta'])+ \
+										hccapx_to_pack['mac_sta']+ \
 										hccapx_to_pack['nonce_sta']+ \
-										bytes(PutUint16(hccapx_to_pack['eapol_len']))+ \
+										PutUint16(hccapx_to_pack['eapol_len'])+ \
 										hccapx_to_pack['eapol'] \
 									)
 									self.DB_hccapx_add(bssid=bssidf.replace(':', '-').upper(), essid=essidf, raw_data=hccapx)
@@ -1615,13 +1615,13 @@ class Builder(object):
 									hccap_essid = (hccapx_to_pack['essid']+fromhex('00000000'))
 									hccap = (
 										hccap_essid+ \
-										bytes(hccapx_to_pack['mac_ap'])+ \
-										bytes(hccapx_to_pack['mac_sta'])+ \
+										hccapx_to_pack['mac_ap']+ \
+										hccapx_to_pack['mac_sta']+ \
 										hccapx_to_pack['nonce_sta']+ \
 										hccapx_to_pack['nonce_ap']+ \
 										hccapx_to_pack['eapol']+ \
-										bytes(PutUint32(hccapx_to_pack['eapol_len']))+ \
-										bytes(PutUint32(hccapx_to_pack['keyver']))+ \
+										PutUint32(hccapx_to_pack['eapol_len'])+ \
+										PutUint32(hccapx_to_pack['keyver'])+ \
 										hccapx_to_pack['keymic'] \
 									)
 									self.DB_hccap_add(bssid=bssidf.replace(':', '-').upper(), essid=essidf, raw_data=hccap)
@@ -1654,7 +1654,7 @@ class Builder(object):
 					for eapmd5s_AP_STA_ in eapmd5s_AP_.values():
 						if not QUIET:
 							xprint('| > STA={}, ID={}'.format( \
-								':'.join(hex(bytes(eapmd5s_AP_STA_['mac_sta']))[i:i+2] for i in range(0,12,2)), \
+								':'.join(hex(eapmd5s_AP_STA_['mac_sta']))[i:i+2] for i in range(0,12,2), \
 								eapmd5s_AP_STA_['id'] \
 							))
 						self.DB_hceapmd5_add(auth_id=eapmd5s_AP_STA_['id'], auth_hash=eapmd5s_AP_STA_['hash'], auth_salt=eapmd5s_AP_STA_['salt'])
@@ -1666,7 +1666,7 @@ class Builder(object):
 					for eapleaps_AP_STA_ in eapleaps_AP_.values():
 						if not QUIET:
 							xprint('| > STA={}, ID={}, NAME={}'.format( \
-								':'.join(hex(bytes(eapleaps_AP_STA_['mac_sta']))[i:i+2] for i in range(0,12,2)), \
+								':'.join(hex(eapleaps_AP_STA_['mac_sta']))[i:i+2] for i in range(0,12,2), \
 								eapleaps_AP_STA_['id'], \
 								eapleaps_AP_STA_['name'] \
 							))
@@ -1713,7 +1713,7 @@ class Builder(object):
 			## In case we have EAP-MD5 but no essid has been detected
 			for key, value in DB.eapmd5s.items():
 				if not DB.essids.get(key):
-					bssid = hex(bytes(key))
+					bssid = hex(key)
 					bssidf = ':'.join(bssid[i:i+2] for i in range(0,12,2))
 					xprint('\n|*| BSSID={} (Vendor MAC) (Undetected)'.format(bssidf), end='')
 					if (self.filters[0] == "essid") or (self.filters[0] == "bssid" and self.filters[1] != bssid):
@@ -1722,7 +1722,7 @@ class Builder(object):
 					xprint()
 					for v in value.values():
 						xprint('| > STA={}, ID={}'.format( \
-							':'.join(hex(bytes(v['mac_sta']))[i:i+2] for i in range(0,12,2)), \
+							':'.join(hex(v['mac_sta']))[i:i+2] for i in range(0,12,2), \
 							v['id'] \
 						))
 						DB.hceapmd5_add(auth_id=v['id'], auth_hash=v['hash'], auth_salt=v['salt'])
@@ -1730,7 +1730,7 @@ class Builder(object):
 			## In case we have EAP-LEAP but no essid has been detected
 			for key, value in DB.eapleaps.items():
 				if not DB.essids.get(key):
-					bssid = hex(bytes(key))
+					bssid = hex(key)
 					bssidf = ':'.join(bssid[i:i+2] for i in range(0,12,2))
 					xprint('\n|*| BSSID={} (VENDOR_MAC) (Undetected)'.format(bssidf), end='')
 					if (self.filters[0] == "essid") or (self.filters[0] == "bssid" and self.filters[1] != bssid):
@@ -1739,7 +1739,7 @@ class Builder(object):
 					xprint()
 					for v in value.values():
 						xprint('| > STA={}, ID={}, NAME={}'.format( \
-							':'.join(hex(bytes(v['mac_sta']))[i:i+2] for i in range(0,12,2)), \
+							':'.join(hex(v['mac_sta']))[i:i+2] for i in range(0,12,2), \
 							v['id'], \
 							v['name'] \
 						))
@@ -1755,7 +1755,7 @@ class Builder(object):
 def main(args, cap_file, filesize):
 	global CUSTOM_ESSID
 	if args.overwrite_essid:
-		CUSTOM_ESSID = bytes(args.overwrite_essid, "utf-8")
+		CUSTOM_ESSID = args.overwrite_essid, "utf-8"
 	if not QUIET:
 		STATUS.set_filesize(filesize)
 	try:
