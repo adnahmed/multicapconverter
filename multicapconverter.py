@@ -1654,7 +1654,7 @@ class Builder(object):
 					for eapmd5s_AP_STA_ in eapmd5s_AP_.values():
 						if not QUIET:
 							xprint('| > STA={}, ID={}'.format( \
-								':'.join(hex(eapmd5s_AP_STA_['mac_sta']))[i:i+2] for i in range(0,12,2), \
+								(':'.join(hex(eapmd5s_AP_STA_['mac_sta']))[i:i+2] for i in range(0,12,2)), \
 								eapmd5s_AP_STA_['id'] \
 							))
 						self.DB_hceapmd5_add(auth_id=eapmd5s_AP_STA_['id'], auth_hash=eapmd5s_AP_STA_['hash'], auth_salt=eapmd5s_AP_STA_['salt'])
@@ -1666,7 +1666,7 @@ class Builder(object):
 					for eapleaps_AP_STA_ in eapleaps_AP_.values():
 						if not QUIET:
 							xprint('| > STA={}, ID={}, NAME={}'.format( \
-								':'.join(hex(eapleaps_AP_STA_['mac_sta']))[i:i+2] for i in range(0,12,2), \
+								(':'.join(hex(eapleaps_AP_STA_['mac_sta']))[i:i+2] for i in range(0,12,2)), \
 								eapleaps_AP_STA_['id'], \
 								eapleaps_AP_STA_['name'] \
 							))
@@ -1722,7 +1722,7 @@ class Builder(object):
 					xprint()
 					for v in value.values():
 						xprint('| > STA={}, ID={}'.format( \
-							':'.join(hex(v['mac_sta']))[i:i+2] for i in range(0,12,2), \
+							(':'.join(hex(v['mac_sta']))[i:i+2] for i in range(0,12,2)), \
 							v['id'] \
 						))
 						DB.hceapmd5_add(auth_id=v['id'], auth_hash=v['hash'], auth_salt=v['salt'])
@@ -1739,7 +1739,7 @@ class Builder(object):
 					xprint()
 					for v in value.values():
 						xprint('| > STA={}, ID={}, NAME={}'.format( \
-							':'.join(hex(v['mac_sta']))[i:i+2] for i in range(0,12,2), \
+							(':'.join(hex(v['mac_sta']))[i:i+2] for i in range(0,12,2)), \
 							v['id'], \
 							v['name'] \
 						))
