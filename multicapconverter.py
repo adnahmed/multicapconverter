@@ -190,26 +190,37 @@ def PutUint16(v):
 def PutUint32(v):
 	return ((v & 0x000000ff), (v & 0x0000ff00) >> 8, (v & 0x00ff0000) >> 16, (v & 0xff000000) >> 24)
 def byte_swap_16(n):
-	return (n & 0xff00) >> 8 \
-	| (n & 0x00ff) << 8
+	__pragma__ ('js', '{}',  '''
+		return Number((BigInt(n) & 0xff00n) >> 8n | (BigInt(n) & 0x00ffn) << 8n) 
+    ''')
+
 def byte_swap_32(n):
-	return (n & 0xff000000) >> 24 \
-	| (n & 0x00ff0000) >>  8 \
-	| (n & 0x0000ff00) <<  8 \
-	| (n & 0x000000ff) << 24
+	__pragma__ ('js', '{}',  '''
+		return Number(
+			(BigInt(n) & 0xff000000n) >> 24n \
+			| (BigInt(n) & 0x00ff0000n) >>  8n \
+			| (BigInt(n) & 0x0000ff00n) <<  8n \
+			| (BigInt(n) & 0x000000ffn) << 24n
+		) 
+    ''')
 def byte_swap_64(n):
-	return (n & 0xff00000000000000) >> 56 \
-	| (n & 0x00ff000000000000) >> 40 \
-	| (n & 0x0000ff0000000000) >> 24 \
-	| (n & 0x000000ff00000000) >>  8 \
-	| (n & 0x00000000ff000000) <<  8 \
-	| (n & 0x0000000000ff0000) << 24 \
-	| (n & 0x000000000000ff00) << 40 \
-	| (n & 0x00000000000000ff) << 56
+	__pragma__ ('js', '{}',  '''
+		return Number(
+	  (BigInt(n) & 0xff00000000000000n) >> 56n \
+	| (BigInt(n) & 0x00ff000000000000n) >> 40n \
+	| (BigInt(n) & 0x0000ff0000000000n) >> 24n \
+	| (BigInt(n) & 0x000000ff00000000n) >>  8n \
+	| (BigInt(n) & 0x00000000ff000000n) <<  8n \
+	| (BigInt(n) & 0x0000000000ff0000n) << 24n \
+	| (BigInt(n) & 0x000000000000ff00n) << 40n \
+	| (BigInt(n) & 0x00000000000000ffn) << 56n
+	) 
+    ''')
 def to_signed_32(n):
-	n = n & 0xffffffff
-	return (n ^ 0x80000000) - 0x80000000
-#
+	__pragma__ ('js', '{}',  '''
+		let _n = BigInt(n) & 0xffffffffn
+		return Number((_n ^ 0x80000000n) - 0x80000000n) 
+    ''')
 def get_valid_bssid(bssid):
 	bssid = re.match("[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", bssid.lower())
 	if bssid:
