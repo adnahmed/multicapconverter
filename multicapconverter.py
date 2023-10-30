@@ -566,10 +566,20 @@ def get_essid_from_tag(packet, header, length_skip):
 				if len(CUSTOM_ESSID) > 0:
 					essid['essid'] = CUSTOM_ESSID
 					essid['essid_len'] = len(essid['essid'])
-					essid['essid'] += fromhex('00')*(MAX_ESSID_LEN - len(essid['essid']))
+					__pragma__ ('js', '{}', '''
+					const __essid__ = new Uint8Array(MAX_ESSID_LEN);
+					__essid__.set(essid['essid']);
+					essid['essid'] = __essid__;
+					''')
+					# essid['essid'] += fromhex('00')*(MAX_ESSID_LEN - len(essid['essid']))
 				else:
 					essid['essid'] = beacon[cur:cur+taglen]
-					essid['essid'] += fromhex('00')*(MAX_ESSID_LEN - len(essid['essid']))
+					__pragma__ ('js', '{}', '''
+					const __essid__ = new Uint8Array(MAX_ESSID_LEN);
+					__essid__.set(essid['essid']);			
+					essid['essid'] = __essid__;
+					''')
+					# essid['essid'] += fromhex('00')*(MAX_ESSID_LEN - len(essid['essid']))
 					essid['essid_len'] = taglen	
 				return 0, essid
 		cur += taglen
@@ -686,7 +696,12 @@ def handle_auth(auth_packet, auth_packet_copy, auth_packet_t_size, keymic_size, 
 			excpkt_num = EXC_PKT_NUM_2
 	excpkt = {}
 	excpkt['nonce'] = auth_packet['wpa_key_nonce']
-	excpkt['nonce'] += fromhex('00')*(32 - len(excpkt['nonce']))
+	__pragma__ ('js', '{}', '''
+	var __excpkt__ = new Uint8Array(32);
+	__excpkt__.set(excpkt['nonce'])
+	excpkt['nonce'] = __excpkt__;
+	''')
+	# excpkt['nonce'] += fromhex('00')*(32 - len(excpkt['nonce']))
 	excpkt['replay_counter'] = ap_replay_counter
 	excpkt['excpkt_num'] = excpkt_num
 	excpkt['eapol_len'] = auth_packet_t_size + ap_wpa_key_data_length
@@ -695,9 +710,19 @@ def handle_auth(auth_packet, auth_packet_copy, auth_packet_t_size, keymic_size, 
 	if (auth_packet_t_size + ap_wpa_key_data_length) > SIZE_OF_EAPOL:
 		return -1, None
 	excpkt['eapol'] = auth_packet_copy
-	excpkt['eapol'] += fromhex('00') *(auth_packet_t_size - len(excpkt['eapol']))
+	__pragma__ ('js', '{}', '''
+	var __excpkt__ = new Uint8Array(auth_packet_t_size);
+	__excpkt__.set(excpkt['eapol']);
+	excpkt['eapol'] = __excpkt__;
+	''')
+	# excpkt['eapol'] += fromhex('00') *(auth_packet_t_size - len(excpkt['eapol']))
 	excpkt['eapol'] += rest_packet[:ap_wpa_key_data_length]
-	excpkt['eapol'] += fromhex('00') *(SIZE_OF_EAPOL - len(excpkt['eapol']))
+	__pragma__ ('js', '{}', '''
+	var __excpkt__ = new Uint8Array(SIZE_OF_EAPOL);
+	__excpkt__.set(excpkt['eapol']);
+	excpkt['eapol'] = __excpkt__;
+	''')
+	# excpkt['eapol'] += fromhex('00') *(SIZE_OF_EAPOL - len(excpkt['eapol']))
 	excpkt['keymic'] = auth_packet['wpa_key_mic']
 	excpkt['keyver'] = ap_key_information & WPA_KEY_INFO_TYPE_MASK
 	if (excpkt_num == EXC_PKT_NUM_3) or (excpkt_num == EXC_PKT_NUM_4):
@@ -1612,7 +1637,12 @@ class Builder(object):
 								elif self.export == "hccap":
 									if len(hccapx_to_pack['keymic']) != 16:
 										continue
-									hccap_essid = (hccapx_to_pack['essid']+fromhex('00000000'))
+									__pragma__ ('js', '{}', '''
+									const __hccap_essid__ = new Uint8Array(len(hccapx_to_pack['essid']) + 4 )
+									__hccap_essid__.set(hccapx_to_pack['essid'])
+									hccap_essid = __hccap_essid__
+									''')
+									# hccap_essid = (hccapx_to_pack['essid']+fromhex('00000000'))
 									hccap = (
 										hccap_essid+ \
 										hccapx_to_pack['mac_ap']+ \
