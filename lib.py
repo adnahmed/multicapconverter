@@ -79,7 +79,7 @@ def fromhex(_hex):
         v = _hex[i] + _hex[i + 1]
         _bytes.append(int(v, 16))
         i += 2
-    return bytes(_bytes)
+    __pragma__ ('js', '{}', 'return Uint8Array.from(_bytes)')
 
 
 "Example:\n"
