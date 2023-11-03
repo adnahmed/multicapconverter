@@ -590,6 +590,7 @@ def get_pmkid_from_packet(packet, source):
 		akm = None # Unknown AKM
 		if packet:
 			pos = 0
+			__pragma__ ('keycheck')
 			while True:
 				try:
 					tag_id = packet[pos]
@@ -603,6 +604,7 @@ def get_pmkid_from_packet(packet, source):
 					pos = pos+2+tag_len
 				except:
 					break
+			__pragma__ ('nokeycheck')
 		return
 	elif source == "EAPOL-M2":
 		pos = 0
