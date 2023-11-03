@@ -360,7 +360,10 @@ class Database(object):
 			if char < 0x20 or char > 0x7e:
 				self.passwords.append("$HEX[{}]".format(hex(password)))
 				return
-		self.passwords.append(password.decode('ascii'))
+		__pragma__ ('js', '{}', '''
+		password = Buffer.from(password).toString('ascii')
+		''')
+		self.passwords.append(password)
 	def essid_add(self, bssid, essid, essid_len, essid_source):
 		# Init
 		key = bssid
@@ -1087,13 +1090,21 @@ def process_packet(packet, header):
 						if packet[auth_offset+4] == 1: # Request
 							auth_resp1 = ''
 							auth_resp2 = hex(packet[auth_offset+12:auth_offset+12+packet[auth_offset+11]])
-							auth_name = packet[auth_offset+12+packet[auth_offset+11]:].decode(encoding='utf-8', errors='ignore').rstrip('\x00')
+							auth_name_packet = packet[auth_offset+12+packet[auth_offset+11]:]
+							__pragma__ ('js', '''
+							let auth_name_packet_decoded = Buffer.from(auth_name_packet).toString('utf-8')
+							''')
+							auth_name =  auth_name_packet_decoded.rstrip('\x00')
 							mac_ap = ieee80211_hdr_3addr['addr3']
 							mac_sta = ieee80211_hdr_3addr['addr1'] if ieee80211_hdr_3addr['addr3'] != ieee80211_hdr_3addr['addr1'] else ieee80211_hdr_3addr['addr2']
 						else: # Response
 							auth_resp1 = hex(packet[auth_offset+12:auth_offset+12+packet[auth_offset+11]])
 							auth_resp2 = ''
-							auth_name = packet[auth_offset+12+packet[auth_offset+11]:].decode(encoding='utf-8', errors='ignore').rstrip('\x00')
+							auth_name_packet = packet[auth_offset+12+packet[auth_offset+11]:]
+							__pragma__ ('js', '''
+							let auth_name_packet_decoded = Buffer.from(auth_name_packet).toString('utf-8')
+							''')
+							auth_name = auth_name_packet_decoded.rstrip('\x00')
 							mac_ap = ieee80211_hdr_3addr['addr3']
 							mac_sta = ieee80211_hdr_3addr['addr1'] if ieee80211_hdr_3addr['addr3'] != ieee80211_hdr_3addr['addr1'] else ieee80211_hdr_3addr['addr2']
 						DB.eapleap_add(auth_id=auth_id, mac_ap=mac_ap, mac_sta=mac_sta, auth_resp1=auth_resp1, auth_resp2=auth_resp2, auth_name=auth_name)
@@ -1431,7 +1442,10 @@ class Builder(object):
 	def __build__(self, DB, essid_list):
 		for essid in essid_list.values():
 			bssid = hex(essid['bssid'])
-			essidf = essid['essid'].decode(encoding='utf-8', errors='ignore').rstrip('\x00')
+			__pragma__ ('js', '{}', '''
+			let essid_decoded = Buffer.from(essid['essid']).toString('utf-8');
+			''')
+			essidf = essid_decoded.rstrip('\x00')
 			bssidf = ':'.join(bssid[i:i+2] for i in range(0,12,2))
 			if not QUIET:
 				xprint('\n|*| BSSID={} ESSID={} (Vendor MAC)'.format( \
